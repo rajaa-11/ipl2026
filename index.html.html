@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPL 2026 Bet Tracker 🏏</title>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800;900&family=Nunito:wght@400;600;700;800&display=swap');
+:root {
+  --bg:#0a0e1a;--card:#111827;--card2:#1a2236;--border:#1e2d45;
+  --accent:#f59e0b;--accent2:#3b82f6;--green:#10b981;--red:#ef4444;
+  --text:#f1f5f9;--muted:#64748b;--purple:#8b5cf6;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;overflow-x:hidden;}
+
+
+
+/* NAV */
+nav{position:sticky;top:0;z-index:50;background:rgba(10,14,26,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 16px;}
+.nav-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:4px;height:54px;overflow-x:auto;}
+.nav-inner::-webkit-scrollbar{display:none;}
+.nav-btn{background:none;border:none;color:var(--muted);font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:700;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+.nav-btn:hover{color:var(--text);background:var(--card);}
+.nav-btn.active{color:var(--accent);background:var(--card2);}
+.nav-logo{font-family:'Baloo 2',sans-serif;font-weight:900;font-size:1.1rem;color:var(--accent);margin-right:8px;white-space:nowrap;}
+
+/* PAGES */
+.page{display:none;max-width:900px;margin:0 auto;padding:20px 16px 40px;}
+.page.active{display:block;}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#1a0a00 0%,#0d1929 50%,#0a0e1a 100%);border:1px solid var(--border);border-radius:20px;padding:28px 24px;margin-bottom:20px;position:relative;overflow:hidden;}
+.hero::before{content:'🏏';position:absolute;right:-10px;top:-10px;font-size:100px;opacity:0.06;}
+.hero h1{font-family:'Baloo 2',sans-serif;font-weight:900;font-size:1.8rem;color:var(--accent);line-height:1.1;}
+.hero p{color:var(--muted);margin-top:6px;font-size:0.9rem;}
+
+/* TODAY MATCHES */
+.today-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px;}
+.today-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.today-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.today-card.has-winner{border-color:var(--green);}
+.today-card .match-num{font-size:0.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.teams-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.team-name{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1rem;flex:1;}
+.vs{color:var(--accent);font-weight:900;font-size:0.85rem;}
+.match-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.badge{font-size:0.72rem;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 9px;color:var(--muted);font-weight:600;}
+.bet-icons{display:flex;gap:-4px;}
+.bettor-chip{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:700;margin-right:4px;margin-bottom:4px;display:inline-block;}
+.bettor-chip.won{background:#052e16;border-color:var(--green);color:var(--green);}
+.bettor-chip.lost{background:#2d0a0a;border-color:var(--red);color:var(--red);}
+.action-btns{display:flex;gap:8px;margin-top:10px;}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px;}
+.card h2{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.05rem;color:var(--accent);margin-bottom:16px;}
+.section-title{font-size:0.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;}
+
+/* FORM */
+label{display:block;font-size:0.78rem;font-weight:800;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;}
+input,select{width:100%;background:#0a0e1a;border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:0.95rem;padding:9px 13px;margin-bottom:12px;outline:none;transition:border-color 0.15s;}
+input:focus,select:focus{border-color:var(--accent);}
+select option{background:#0a0e1a;}
+.row{display:flex;gap:12px;}
+.row>div{flex:1;}
+
+/* BUTTONS */
+button{background:var(--accent);color:#000;border:none;border-radius:9px;padding:10px 20px;font-family:'Baloo 2',sans-serif;font-size:0.95rem;font-weight:800;cursor:pointer;transition:all 0.15s;}
+button:hover{opacity:0.88;transform:translateY(-1px);}
+button:active{transform:translateY(0);}
+button.btn-blue{background:var(--accent2);color:#fff;}
+button.btn-red{background:var(--red);color:#fff;}
+button.btn-green{background:var(--green);color:#fff;}
+button.btn-ghost{background:var(--card2);border:1px solid var(--border);color:var(--text);}
+button.btn-sm{padding:6px 14px;font-size:0.82rem;}
+button:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+
+/* SCHEDULE TABLE */
+.schedule-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+th{background:var(--card2);color:var(--muted);font-weight:800;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);}
+td{padding:9px 12px;border-bottom:1px solid #0f1824;vertical-align:middle;}
+tr:hover td{background:rgba(255,255,255,0.02);}
+.match-no{color:var(--muted);font-weight:700;}
+.team-cell{font-weight:700;}
+.home-team{color:var(--accent2);}
+.away-team{color:var(--text);}
+.venue-cell{color:var(--muted);font-size:0.8rem;}
+.winner-cell{font-weight:800;color:var(--green);}
+.phase-header td{background:var(--purple);color:#fff;font-weight:800;font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;padding:6px 12px;}
+
+/* LEADERBOARD */
+.lb-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;}
+.lb-rank{font-family:'Baloo 2',sans-serif;font-weight:900;font-size:1.2rem;width:32px;color:var(--muted);}
+.lb-rank.r1{color:#fbbf24;}.lb-rank.r2{color:#94a3b8;}.lb-rank.r3{color:#b45309;}
+.lb-name{flex:1;font-weight:700;}
+.lb-bets{font-size:0.8rem;color:var(--muted);}
+.lb-amt{font-family:'Baloo 2',sans-serif;font-weight:900;font-size:1.1rem;}
+.lb-amt.pos{color:var(--green);}.lb-amt.neg{color:var(--red);}
+
+/* MATCH CARD (bets) */
+.bet-match-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+.bet-match-title{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1rem;margin-bottom:4px;}
+.bet-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #0f1824;font-size:0.88rem;}
+.bet-row:last-child{border-bottom:none;}
+.bet-person{font-weight:700;min-width:80px;}
+.bet-team-chip{background:var(--card2);border-radius:6px;padding:2px 8px;font-size:0.78rem;font-weight:700;}
+.bet-amt{margin-left:auto;font-weight:700;color:var(--accent);}
+.result-chip{font-size:0.72rem;padding:2px 8px;border-radius:20px;font-weight:800;}
+.result-chip.won{background:#052e16;color:var(--green);}
+.result-chip.lost{background:#2d0a0a;color:var(--red);}
+
+/* ADMIN */
+.admin-lock{text-align:center;padding:40px 20px;}
+.admin-lock h2{font-family:'Baloo 2',sans-serif;color:var(--accent);font-size:1.3rem;margin-bottom:8px;}
+.admin-lock p{color:var(--muted);margin-bottom:20px;font-size:0.9rem;}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:26px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;}
+.modal h3{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--accent);margin-bottom:14px;font-size:1.2rem;}
+.modal-close{float:right;background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:0;margin-top:-4px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:10px 24px;border-radius:30px;font-weight:700;font-size:0.9rem;opacity:0;transition:opacity 0.3s;z-index:300;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+.toast.err{background:var(--red);}
+
+/* EMPTY STATE */
+.empty{color:var(--muted);text-align:center;padding:32px 16px;font-size:0.9rem;}
+
+/* BET QUICK MODAL */
+.team-btns{display:flex;gap:10px;margin-bottom:12px;}
+.team-btn{flex:1;padding:12px;border-radius:10px;font-size:0.95rem;background:var(--card2);border:2px solid var(--border);color:var(--text);}
+.team-btn.selected{border-color:var(--accent);color:var(--accent);}
+
+/* PLAYOFF BRACKET */
+.bracket{display:flex;flex-direction:column;gap:16px;}
+.bracket-round{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.bracket-round h3{font-family:'Baloo 2',sans-serif;font-size:0.95rem;font-weight:800;color:var(--purple);margin-bottom:12px;}
+.bracket-match{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;}
+.bracket-match:last-child{margin-bottom:0;}
+
+/* Responsive */
+@media(max-width:500px){
+  .hero h1{font-size:1.4rem;}
+  .today-grid{grid-template-columns:1fr;}
+  table{font-size:0.78rem;}
+  th,td{padding:7px 8px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NO SETUP SCREEN - config baked in -->
+
+<!-- NAV -->
+<nav id="main-nav" style="display:none">
+  <div class="nav-inner">
+    <span class="nav-logo">🏏 IPL26</span>
+    <button class="nav-btn active" onclick="showPage('home')">🏠 Home</button>
+    <button class="nav-btn" onclick="showPage('schedule')">📅 Schedule</button>
+    <button class="nav-btn" onclick="showPage('bets')">🎯 All Bets</button>
+    <button class="nav-btn" onclick="showPage('standings')">🏆 Standings</button>
+    <button class="nav-btn" onclick="showPage('playoffs')">⚡ Playoffs</button>
+    <button class="nav-btn" id="admin-nav-btn" onclick="showPage('admin')">⚙️ Admin</button>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <h1>TATA IPL 2026 🏆</h1>
+    <p id="hero-subtitle">Loading today's matches...</p>
+  </div>
+  <div id="today-section"></div>
+  <div id="upcoming-home-section"></div>
+</div>
+
+<!-- SCHEDULE PAGE -->
+<div class="page" id="page-schedule">
+  <div class="card">
+    <h2>📅 Full IPL 2026 Schedule</h2>
+    <div class="schedule-wrap">
+      <table id="schedule-table">
+        <thead><tr><th>#</th><th>Date</th><th>Day</th><th>Time</th><th>Home</th><th>Away</th><th>Venue</th><th>Result</th></tr></thead>
+        <tbody id="schedule-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ALL BETS PAGE -->
+<div class="page" id="page-bets">
+  <div class="card" style="margin-bottom:14px">
+    <h2>🎯 Place / View Bets</h2>
+    <div class="row">
+      <div>
+        <label>Select Match</label>
+        <select id="bets-filter-match" onchange="renderBetsPage()">
+          <option value="all">All Matches</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div id="bets-list"></div>
+</div>
+
+<!-- STANDINGS PAGE -->
+<div class="page" id="page-standings">
+  <div class="card">
+    <h2>🏆 Leaderboard</h2>
+    <div id="leaderboard-list"></div>
+  </div>
+  <div class="card">
+    <h2>📊 Match-wise Results</h2>
+    <div id="match-results-list"></div>
+  </div>
+</div>
+
+<!-- PLAYOFFS PAGE -->
+<div class="page" id="page-playoffs">
+  <div class="card">
+    <h2>⚡ Playoff Structure</h2>
+    <p style="color:var(--muted);font-size:0.88rem;margin-bottom:16px;line-height:1.6">The <b style="color:var(--text)">top 4 teams</b> from the league stage qualify for the playoffs. The playoff format is as follows:</p>
+    <div class="bracket">
+      <div class="bracket-round">
+        <h3>Qualifier 1 — 1st vs 2nd</h3>
+        <div class="bracket-match" id="q1-match">
+          <div style="color:var(--muted);font-size:0.85rem">Winner → Direct to Final &nbsp;|&nbsp; Loser → Qualifier 2</div>
+          <div id="q1-teams" style="font-weight:700;margin-top:6px">TBD vs TBD</div>
+          <div id="q1-result" style="color:var(--green);font-size:0.85rem;margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="bracket-round">
+        <h3>Eliminator — 3rd vs 4th</h3>
+        <div class="bracket-match">
+          <div style="color:var(--muted);font-size:0.85rem">Winner → Qualifier 2 &nbsp;|&nbsp; Loser → Eliminated</div>
+          <div id="elim-teams" style="font-weight:700;margin-top:6px">TBD vs TBD</div>
+          <div id="elim-result" style="color:var(--green);font-size:0.85rem;margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="bracket-round">
+        <h3>Qualifier 2 — Q1 Loser vs Eliminator Winner</h3>
+        <div class="bracket-match">
+          <div style="color:var(--muted);font-size:0.85rem">Winner → Final</div>
+          <div id="q2-teams" style="font-weight:700;margin-top:6px">TBD vs TBD</div>
+          <div id="q2-result" style="color:var(--green);font-size:0.85rem;margin-top:4px"></div>
+        </div>
+      </div>
+      <div class="bracket-round" style="border-color:var(--accent)">
+        <h3 style="color:var(--accent)">🏆 FINAL</h3>
+        <div class="bracket-match" style="border-color:var(--accent)">
+          <div style="color:var(--muted);font-size:0.85rem">Q1 Winner vs Q2 Winner</div>
+          <div id="final-teams" style="font-weight:700;margin-top:6px">TBD vs TBD</div>
+          <div id="final-result" style="color:var(--accent);font-size:0.9rem;font-weight:800;margin-top:4px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📋 Points Table (League Stage)</h2>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px">Updated automatically as match results are declared.</p>
+    <div id="points-table"></div>
+  </div>
+</div>
+
+<!-- ADMIN PAGE -->
+<div class="page" id="page-admin">
+  <div id="admin-content"></div>
+</div>
+
+<!-- BET MODAL -->
+<div class="modal-bg" id="bet-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeBetModal()">✕</button>
+    <h3>🎯 Place a Bet</h3>
+    <div id="bet-modal-match-info" style="color:var(--muted);font-size:0.85rem;margin-bottom:14px"></div>
+    <label>Your Name</label>
+    <input type="text" id="bm-name" placeholder="e.g. Ravi">
+    <label>Pick Your Team</label>
+    <div class="team-btns" id="bm-team-btns"></div>
+    <input type="hidden" id="bm-team">
+    <label>Amount (₹)</label>
+    <input type="number" id="bm-amount" placeholder="e.g. 50" min="1">
+    <button onclick="submitBet()" style="width:100%">Place Bet 🎯</button>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="modal-bg" id="admin-login-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('admin-login-modal')">✕</button>
+    <h3>🔐 Admin Login</h3>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:14px">Enter your admin username and passcode.</p>
+    <label>Username</label>
+    <input type="text" id="al-username" placeholder="Admin username">
+    <label>Passcode</label>
+    <input type="password" id="al-passcode" placeholder="Your passcode">
+    <button onclick="doAdminLogin()" style="width:100%">Login ➜</button>
+    <div id="login-err" style="color:var(--red);font-size:0.85rem;margin-top:8px;display:none">Invalid username or passcode.</div>
+  </div>
+</div>
+
+<!-- REGISTER ADMIN MODAL -->
+<div class="modal-bg" id="admin-register-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('admin-register-modal')">✕</button>
+    <h3>📝 Register as Admin</h3>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:14px">Create your admin account. Only 3 admins allowed total.</p>
+    <label>Choose Username</label>
+    <input type="text" id="ar-username" placeholder="e.g. Karthik">
+    <label>Choose Passcode</label>
+    <input type="password" id="ar-passcode" placeholder="Set a passcode">
+    <button onclick="doAdminRegister()" style="width:100%">Register ✅</button>
+    <div id="register-err" style="color:var(--red);font-size:0.85rem;margin-top:8px;display:none"></div>
+  </div>
+</div>
+
+<!-- DECLARE WINNER MODAL -->
+<div class="modal-bg" id="winner-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('winner-modal')">✕</button>
+    <h3>🏆 Declare Winner</h3>
+    <div id="wm-match-info" style="color:var(--muted);font-size:0.85rem;margin-bottom:14px"></div>
+    <label>Winning Team</label>
+    <div class="team-btns" id="wm-team-btns"></div>
+    <input type="hidden" id="wm-team">
+    <button onclick="submitWinner()" class="btn-green" style="width:100%">Declare ✅</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==============================
+// FULL IPL 2026 SCHEDULE (matches 1-20 from PDF; rest TBA)
+// ==============================
+const SCHEDULE = [
+  // PHASE 1
+  {no:1,date:'2026-03-28',day:'Sat',time:'7:30 PM',home:'Royal Challengers Bengaluru',away:'Sunrisers Hyderabad',venue:'Bengaluru',phase:'League Stage'},
+  {no:2,date:'2026-03-29',day:'Sun',time:'7:30 PM',home:'Mumbai Indians',away:'Kolkata Knight Riders',venue:'Mumbai',phase:'League Stage'},
+  {no:3,date:'2026-03-30',day:'Mon',time:'7:30 PM',home:'Rajasthan Royals',away:'Chennai Super Kings',venue:'Guwahati',phase:'League Stage'},
+  {no:4,date:'2026-03-31',day:'Tue',time:'7:30 PM',home:'Punjab Kings',away:'Gujarat Titans',venue:'New Chandigarh',phase:'League Stage'},
+  {no:5,date:'2026-04-01',day:'Wed',time:'7:30 PM',home:'Lucknow Super Giants',away:'Delhi Capitals',venue:'Lucknow',phase:'League Stage'},
+  {no:6,date:'2026-04-02',day:'Thu',time:'7:30 PM',home:'Kolkata Knight Riders',away:'Sunrisers Hyderabad',venue:'Kolkata',phase:'League Stage'},
+  {no:7,date:'2026-04-03',day:'Fri',time:'7:30 PM',home:'Chennai Super Kings',away:'Punjab Kings',venue:'Chennai',phase:'League Stage'},
+  {no:8,date:'2026-04-04',day:'Sat',time:'3:30 PM',home:'Delhi Capitals',away:'Mumbai Indians',venue:'Delhi',phase:'League Stage'},
+  {no:9,date:'2026-04-04',day:'Sat',time:'7:30 PM',home:'Gujarat Titans',away:'Rajasthan Royals',venue:'Ahmedabad',phase:'League Stage'},
+  {no:10,date:'2026-04-05',day:'Sun',time:'3:30 PM',home:'Sunrisers Hyderabad',away:'Lucknow Super Giants',venue:'Hyderabad',phase:'League Stage'},
+  {no:11,date:'2026-04-05',day:'Sun',time:'7:30 PM',home:'Royal Challengers Bengaluru',away:'Chennai Super Kings',venue:'Bengaluru',phase:'League Stage'},
+  {no:12,date:'2026-04-06',day:'Mon',time:'7:30 PM',home:'Kolkata Knight Riders',away:'Punjab Kings',venue:'Kolkata',phase:'League Stage'},
+  {no:13,date:'2026-04-07',day:'Tue',time:'7:30 PM',home:'Rajasthan Royals',away:'Mumbai Indians',venue:'Guwahati',phase:'League Stage'},
+  {no:14,date:'2026-04-08',day:'Wed',time:'7:30 PM',home:'Delhi Capitals',away:'Gujarat Titans',venue:'Delhi',phase:'League Stage'},
+  {no:15,date:'2026-04-09',day:'Thu',time:'7:30 PM',home:'Kolkata Knight Riders',away:'Lucknow Super Giants',venue:'Kolkata',phase:'League Stage'},
+  {no:16,date:'2026-04-10',day:'Fri',time:'7:30 PM',home:'Rajasthan Royals',away:'Royal Challengers Bengaluru',venue:'Guwahati',phase:'League Stage'},
+  {no:17,date:'2026-04-11',day:'Sat',time:'3:30 PM',home:'Punjab Kings',away:'Sunrisers Hyderabad',venue:'New Chandigarh',phase:'League Stage'},
+  {no:18,date:'2026-04-11',day:'Sat',time:'7:30 PM',home:'Chennai Super Kings',away:'Delhi Capitals',venue:'Chennai',phase:'League Stage'},
+  {no:19,date:'2026-04-12',day:'Sun',time:'3:30 PM',home:'Lucknow Super Giants',away:'Gujarat Titans',venue:'Lucknow',phase:'League Stage'},
+  {no:20,date:'2026-04-12',day:'Sun',time:'7:30 PM',home:'Mumbai Indians',away:'Royal Challengers Bengaluru',venue:'Mumbai',phase:'League Stage'},
+  // Matches 21-70 TBA
+  ...[...Array(50)].map((_,i)=>({no:i+21,date:'TBA',day:'TBA',time:'TBA',home:'TBA',away:'TBA',venue:'TBA',phase:'League Stage'})),
+  // PLAYOFFS
+  {no:71,date:'TBA',day:'TBA',time:'TBA',home:'1st',away:'2nd',venue:'TBA',phase:'Qualifier 1'},
+  {no:72,date:'TBA',day:'TBA',time:'TBA',home:'3rd',away:'4th',venue:'TBA',phase:'Eliminator'},
+  {no:73,date:'TBA',day:'TBA',time:'TBA',home:'Q1 Loser',away:'Eliminator Winner',venue:'TBA',phase:'Qualifier 2'},
+  {no:74,date:'TBA',day:'TBA',time:'TBA',home:'Q1 Winner',away:'Q2 Winner',venue:'TBA',phase:'Final'},
+];
+
+const TEAMS = ['Royal Challengers Bengaluru','Mumbai Indians','Rajasthan Royals','Punjab Kings','Lucknow Super Giants','Kolkata Knight Riders','Chennai Super Kings','Delhi Capitals','Gujarat Titans','Sunrisers Hyderabad'];
+const TEAM_SHORT = {'Royal Challengers Bengaluru':'RCB','Mumbai Indians':'MI','Rajasthan Royals':'RR','Punjab Kings':'PBKS','Lucknow Super Giants':'LSG','Kolkata Knight Riders':'KKR','Chennai Super Kings':'CSK','Delhi Capitals':'DC','Gujarat Titans':'GT','Sunrisers Hyderabad':'SRH'};
+function short(t){return TEAM_SHORT[t]||t;}
+
+// ==============================
+// STATE
+// ==============================
+let db = null;
+let admins = {}; // {username: {passcode, uid}}
+let results = {}; // {matchNo: winnerTeam}
+let bets = {};   // {betId: {name, matchNo, team, amount, ts}}
+let currentAdmin = null; // logged in admin username
+let betModalMatchNo = null;
+let winnerModalMatchNo = null;
+
+// ==============================
+// FIREBASE INIT — config baked in
+// ==============================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCw39jvjIOdtGpIBRNfAabkKJPhrO-9FS4",
+  authDomain: "first-set-ipl-betting.firebaseapp.com",
+  databaseURL: "https://first-set-ipl-betting-default-rtdb.firebaseio.com",
+  projectId: "first-set-ipl-betting",
+  storageBucket: "first-set-ipl-betting.firebasestorage.app",
+  messagingSenderId: "773470352897",
+  appId: "1:773470352897:web:6c7431bcd90e3c17f7f200"
+};
+
+window.onload = function() {
+  try { firebase.initializeApp(FIREBASE_CONFIG); } catch(e) {}
+  db = firebase.database();
+  document.getElementById('main-nav').style.display = 'block';
+  db.ref('admins').on('value', snap => { admins = snap.val() || {}; renderAdminPage(); });
+  db.ref('results').on('value', snap => { results = snap.val() || {}; renderAll(); });
+  db.ref('bets').on('value', snap => { bets = snap.val() || {}; renderAll(); });
+  renderAll();
+};
+
+// ==============================
+// RENDER ALL
+// ==============================
+function renderAll() {
+  renderHome();
+  renderScheduleTable();
+  renderBetsPage();
+  renderStandings();
+  renderPlayoffs();
+  populateBetsFilter();
+}
+
+// ==============================
+// HOME PAGE
+// ==============================
+function renderHome() {
+  const today = todayStr();
+  const todayMatches = SCHEDULE.filter(m => m.date === today && m.date !== 'TBA');
+  const upcomingMatches = SCHEDULE.filter(m => m.date !== 'TBA' && m.date > today).slice(0, 4);
+
+  const sub = document.getElementById('hero-subtitle');
+  if (todayMatches.length > 0) sub.textContent = `${todayMatches.length} match${todayMatches.length>1?'es':''} today — place your bets! 🎯`;
+  else sub.textContent = 'No matches today. Check upcoming matches below! 👇';
+
+  // Today
+  const ts = document.getElementById('today-section');
+  if (todayMatches.length > 0) {
+    ts.innerHTML = `<div class="section-title">🔥 Today's Matches</div><div class="today-grid">${todayMatches.map(m=>matchCard(m,true)).join('')}</div>`;
+  } else {
+    ts.innerHTML = '';
+  }
+
+  // Upcoming
+  const us = document.getElementById('upcoming-home-section');
+  if (upcomingMatches.length > 0) {
+    us.innerHTML = `<div class="section-title">📅 Upcoming Matches</div><div class="today-grid">${upcomingMatches.map(m=>matchCard(m,false)).join('')}</div>`;
+  } else if (todayMatches.length === 0) {
+    us.innerHTML = `<p class="empty">No upcoming matches found. Admin hasn't added extended schedule yet.</p>`;
+  } else {
+    us.innerHTML = '';
+  }
+}
+
+function matchCard(m, isToday) {
+  const matchBets = Object.values(bets).filter(b => b.matchNo === m.no);
+  const winner = results[m.no];
+  const totalPot = matchBets.reduce((s,b)=>s+b.amount,0);
+
+  let bettorHtml = '';
+  if (matchBets.length > 0) {
+    bettorHtml = '<div style="margin-top:8px;display:flex;flex-wrap:wrap;">';
+    matchBets.forEach(b => {
+      let cls = '';
+      if (winner) cls = b.team === winner ? 'won' : 'lost';
+      bettorHtml += `<span class="bettor-chip ${cls}">${b.name} (${short(b.team)}) ₹${b.amount}</span>`;
+    });
+    bettorHtml += '</div>';
+  }
+
+  const winnerBadge = winner ? `<span style="color:var(--green);font-size:0.8rem;font-weight:800">🏆 ${short(winner)} Won</span>` : '';
+  const potBadge = totalPot > 0 ? `<span class="badge">💰 Pot: ₹${totalPot}</span>` : '';
+
+  const betBtn = !winner ? `<button class="btn-sm" onclick="openBetModal(${m.no})">🎯 Bet</button>` : '';
+
+  return `<div class="today-card ${winner?'has-winner':''}">
+    <div class="match-num">Match ${m.no} · ${formatDate(m.date)}</div>
+    <div class="teams-row">
+      <span class="team-name">${short(m.home)}</span>
+      <span class="vs">VS</span>
+      <span class="team-name" style="text-align:right">${short(m.away)}</span>
+    </div>
+    <div class="match-meta">
+      <span class="badge">⏰ ${m.time}</span>
+      <span class="badge">📍 ${m.venue}</span>
+      ${potBadge}
+    </div>
+    ${winnerBadge}
+    ${bettorHtml}
+    <div class="action-btns">${betBtn}<button class="btn-sm btn-ghost" onclick="showPage('bets');filterMatch(${m.no})">👁 View Bets</button></div>
+  </div>`;
+}
+
+// ==============================
+// SCHEDULE TABLE
+// ==============================
+function renderScheduleTable() {
+  const tbody = document.getElementById('schedule-body');
+  let html = '';
+  let lastPhase = '';
+  SCHEDULE.forEach(m => {
+    if (m.date === 'TBA' && m.no <= 70) return; // skip TBA league matches for cleanliness
+    if (m.phase !== lastPhase) {
+      html += `<tr class="phase-header"><td colspan="8">📌 ${m.phase}</td></tr>`;
+      lastPhase = m.phase;
+    }
+    const winner = results[m.no];
+    const winnerCell = winner ? `<span class="winner-cell">🏆 ${short(winner)}</span>` : `<span style="color:var(--muted);font-size:0.8rem">Pending</span>`;
+    html += `<tr>
+      <td class="match-no">${m.no}</td>
+      <td>${m.date!=='TBA'?formatDate(m.date):'-'}</td>
+      <td>${m.day!=='TBA'?m.day:'-'}</td>
+      <td style="white-space:nowrap">${m.time!=='TBA'?m.time:'-'}</td>
+      <td class="team-cell home-team">${short(m.home)}</td>
+      <td class="team-cell away-team">${short(m.away)}</td>
+      <td class="venue-cell">${m.venue!=='TBA'?m.venue:'-'}</td>
+      <td>${winnerCell}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+// ==============================
+// BETS PAGE
+// ==============================
+function populateBetsFilter() {
+  const sel = document.getElementById('bets-filter-match');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="all">All Matches</option>';
+  SCHEDULE.filter(m=>m.date!=='TBA' && m.no<=70).forEach(m=>{
+    sel.innerHTML += `<option value="${m.no}">Match ${m.no}: ${short(m.home)} vs ${short(m.away)} (${formatDate(m.date)})</option>`;
+  });
+  if (cur) sel.value = cur;
+}
+
+function filterMatch(no) {
+  document.getElementById('bets-filter-match').value = no;
+  renderBetsPage();
+}
+
+function renderBetsPage() {
+  const filter = document.getElementById('bets-filter-match').value;
+  const el = document.getElementById('bets-list');
+  let matches = SCHEDULE.filter(m=>m.date!=='TBA' && m.no<=70);
+  if (filter !== 'all') matches = matches.filter(m=>m.no===parseInt(filter));
+
+  let html = '';
+  matches.forEach(m => {
+    const matchBets = Object.values(bets).filter(b=>b.matchNo===m.no);
+    const winner = results[m.no];
+    const totalPot = matchBets.reduce((s,b)=>s+b.amount,0);
+
+    let betsHtml = '';
+    if (matchBets.length === 0) {
+      betsHtml = '<p style="color:var(--muted);font-size:0.83rem;padding:6px 0">No bets yet</p>';
+    } else {
+      betsHtml = matchBets.map(b => {
+        let badge = '';
+        if (winner) badge = b.team===winner?'<span class="result-chip won">+WON</span>':'<span class="result-chip lost">-LOST</span>';
+        return `<div class="bet-row">
+          <span class="bet-person">${b.name}</span>
+          <span class="bet-team-chip">${short(b.team)}</span>
+          <span class="bet-amt">₹${b.amount}</span>
+          ${badge}
+        </div>`;
+      }).join('');
+    }
+
+    const winnerBadge = winner?`<span style="color:var(--green);font-size:0.8rem;font-weight:800;margin-left:8px">🏆 ${short(winner)} Won</span>`:'';
+    const betBtn = !winner?`<button class="btn-sm" onclick="openBetModal(${m.no})">🎯 Place Bet</button>`:'';
+
+    html += `<div class="bet-match-card">
+      <div class="bet-match-title">${m.home} <span style="color:var(--accent)">vs</span> ${m.away} ${winnerBadge}</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px">Match ${m.no} · ${formatDate(m.date)} · ${m.time} · ${m.venue}${totalPot?` · 💰 ₹${totalPot} pot`:''}</div>
+      ${betsHtml}
+      <div style="margin-top:8px">${betBtn}</div>
+    </div>`;
+  });
+
+  el.innerHTML = html || '<p class="empty">No matches found.</p>';
+}
+
+// ==============================
+// STANDINGS
+// ==============================
+function renderStandings() {
+  // Net money leaderboard
+  const people = {};
+  Object.values(bets).forEach(b => { if(!people[b.name]) people[b.name]={net:0,bets:0,wins:0}; people[b.name].bets++; });
+  Object.keys(results).forEach(no => {
+    const winner = results[no];
+    const matchBets = Object.values(bets).filter(b=>b.matchNo===parseInt(no));
+    const winners = matchBets.filter(b=>b.team===winner);
+    const losers = matchBets.filter(b=>b.team!==winner);
+    const loserTotal = losers.reduce((s,b)=>s+b.amount,0);
+    const winnerTotal = winners.reduce((s,b)=>s+b.amount,0);
+    losers.forEach(b => { if(!people[b.name]) people[b.name]={net:0,bets:0,wins:0}; people[b.name].net -= b.amount; });
+    winners.forEach(b => {
+      if(!people[b.name]) people[b.name]={net:0,bets:0,wins:0};
+      const share = winnerTotal>0?(b.amount/winnerTotal)*loserTotal:0;
+      people[b.name].net += share;
+      people[b.name].wins++;
+    });
+  });
+
+  const sorted = Object.entries(people).sort((a,b)=>b[1].net-a[1].net);
+  const lb = document.getElementById('leaderboard-list');
+  if (sorted.length===0) { lb.innerHTML='<p class="empty">No bets placed yet!</p>'; }
+  else {
+    lb.innerHTML = sorted.map(([name,p],i)=>{
+      const rk = i===0?'r1':i===1?'r2':i===2?'r3':'';
+      const em = i===0?'🥇':i===1?'🥈':i===2?'🥉':`#${i+1}`;
+      return `<div class="lb-item">
+        <span class="lb-rank ${rk}">${em}</span>
+        <div class="lb-name">${name}<div class="lb-bets">${p.bets} bet${p.bets!==1?'s':''} · ${p.wins} win${p.wins!==1?'s':''}</div></div>
+        <span class="lb-amt ${p.net>=0?'pos':'neg'}">${p.net>=0?'+':''}₹${Math.round(p.net)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Match results
+  const mr = document.getElementById('match-results-list');
+  const doneMatches = SCHEDULE.filter(m=>results[m.no]);
+  if (doneMatches.length===0) { mr.innerHTML='<p class="empty">No results declared yet.</p>'; return; }
+  mr.innerHTML = doneMatches.map(m=>{
+    const winner = results[m.no];
+    const matchBets = Object.values(bets).filter(b=>b.matchNo===m.no);
+    const ws = matchBets.filter(b=>b.team===winner).map(b=>`<span style="color:var(--green)">✅${b.name}(+)</span>`).join(' ');
+    const ls = matchBets.filter(b=>b.team!==winner).map(b=>`<span style="color:var(--red)">❌${b.name}(-)</span>`).join(' ');
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <b>${short(m.home)} vs ${short(m.away)}</b> <span style="color:var(--green);font-size:0.82rem">🏆 ${short(winner)}</span>
+      <div style="font-size:0.78rem;color:var(--muted)">${formatDate(m.date)}</div>
+      <div style="font-size:0.82rem;margin-top:4px">${ws} ${ls||'<span style="color:var(--muted)">No bets</span>'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ==============================
+// PLAYOFFS
+// ==============================
+function renderPlayoffs() {
+  // Points table from results
+  const pts = {};
+  TEAMS.forEach(t=>pts[t]={p:0,w:0,l:0,pts:0});
+  SCHEDULE.filter(m=>m.no<=70&&results[m.no]).forEach(m=>{
+    const winner=results[m.no];
+    const loser=winner===m.home?m.away:m.home;
+    if(pts[winner]){pts[winner].p++;pts[winner].w++;pts[winner].pts+=2;}
+    if(pts[loser]){pts[loser].p++;pts[loser].l++;}
+  });
+  const sorted = Object.entries(pts).sort((a,b)=>b[1].pts-a[1].pts||b[1].w-a[1].w);
+
+  const pt = document.getElementById('points-table');
+  pt.innerHTML = `<div class="schedule-wrap"><table>
+    <thead><tr><th>Pos</th><th>Team</th><th>P</th><th>W</th><th>L</th><th>Pts</th></tr></thead>
+    <tbody>${sorted.map(([t,s],i)=>`<tr style="${i<4?'background:rgba(16,185,129,0.05)':''}">
+      <td style="font-weight:800;color:${i<4?'var(--green)':'var(--muted)'}">${i+1}${i<4?' ✅':''}</td>
+      <td class="team-cell">${short(t)}</td>
+      <td>${s.p}</td><td>${s.w}</td><td>${s.l}</td>
+      <td style="font-weight:800;color:var(--accent)">${s.pts}</td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+
+  // Update playoff bracket teams (top 4)
+  const top4 = sorted.slice(0,4).map(([t])=>t);
+  document.getElementById('q1-teams').textContent = top4.length>=2?`${short(top4[0])} vs ${short(top4[1])}`:'TBD vs TBD';
+  document.getElementById('elim-teams').textContent = top4.length>=4?`${short(top4[2])} vs ${short(top4[3])}`:'TBD vs TBD';
+
+  // Playoff match results
+  ['q1','elim','q2','final'].forEach((key,i)=>{
+    const no = 71+i;
+    const w = results[no];
+    const el = document.getElementById(`${key}-result`);
+    if(el) el.textContent = w?`🏆 ${short(w)} Won`:'';
+  });
+  const fr = document.getElementById('final-result');
+  if(fr&&results[74]) fr.textContent = `🏆🏆 ${results[74]} are the IPL 2026 Champions! 🏆🏆`;
+}
+
+// ==============================
+// BET MODAL
+// ==============================
+function openBetModal(matchNo) {
+  const m = SCHEDULE.find(x=>x.no===matchNo);
+  if (!m) return;
+  betModalMatchNo = matchNo;
+  document.getElementById('bet-modal-match-info').textContent = `Match ${m.no}: ${m.home} vs ${m.away} · ${formatDate(m.date)} · ${m.time}`;
+  document.getElementById('bm-name').value = localStorage.getItem('ipl_last_name')||'';
+  document.getElementById('bm-amount').value = '';
+  document.getElementById('bm-team').value = '';
+
+  const btns = document.getElementById('bm-team-btns');
+  btns.innerHTML = `
+    <button class="team-btn" onclick="selectBetTeam('${m.home}',this)">${m.home}</button>
+    <button class="team-btn" onclick="selectBetTeam('${m.away}',this)">${m.away}</button>`;
+
+  document.getElementById('bet-modal').classList.add('open');
+}
+
+function selectBetTeam(team, el) {
+  document.getElementById('bm-team').value = team;
+  document.querySelectorAll('.team-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function closeBetModal() { document.getElementById('bet-modal').classList.remove('open'); }
+
+function submitBet() {
+  const name = document.getElementById('bm-name').value.trim();
+  const team = document.getElementById('bm-team').value;
+  const amount = parseFloat(document.getElementById('bm-amount').value);
+  if (!name) return toast('Enter your name!', true);
+  if (!team) return toast('Pick a team!', true);
+  if (!amount || amount<=0) return toast('Enter a valid amount!', true);
+
+  // Check duplicate
+  const dup = Object.values(bets).find(b=>b.matchNo===betModalMatchNo&&b.name.toLowerCase()===name.toLowerCase());
+  if (dup) return toast(`${name} already placed a bet on this match!`, true);
+
+  localStorage.setItem('ipl_last_name', name);
+  const id = 'bet_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  db.ref('bets/'+id).set({name,matchNo:betModalMatchNo,team,amount,ts:Date.now()});
+  closeBetModal();
+  toast(`Bet placed! ${name} → ${short(team)} ₹${amount} 🎯`);
+}
+
+// ==============================
+// ADMIN
+// ==============================
+function renderAdminPage() {
+  const el = document.getElementById('admin-content');
+  if (!currentAdmin) {
+    const adminCount = Object.keys(admins).length;
+    el.innerHTML = `<div class="admin-lock">
+      <div style="font-size:3rem;margin-bottom:12px">🔐</div>
+      <h2>Admin Area</h2>
+      <p>This section is for admins only (${adminCount}/3 slots used).</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:4px">
+        <button onclick="openModal('admin-login-modal')">Login as Admin</button>
+        ${adminCount<3?`<button class="btn-ghost" onclick="openModal('admin-register-modal')">Register New Admin</button>`:'<p style="color:var(--muted);font-size:0.85rem;margin-top:8px">All 3 admin slots taken. An existing admin must share credentials.</p>'}
+      </div>
+    </div>`;
+    return;
+  }
+
+  // Logged in
+  const pendingMatches = SCHEDULE.filter(m=>m.date!=='TBA'&&!results[m.no]&&m.no<=74);
+  el.innerHTML = `
+    <div class="card" style="border-color:var(--green)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="color:var(--green)">✅ Welcome, ${currentAdmin}!</h2>
+        <button class="btn-red btn-sm" onclick="adminLogout()">Logout</button>
+      </div>
+      <p style="color:var(--muted);font-size:0.85rem">You are logged in as admin.</p>
+    </div>
+
+    <div class="card">
+      <h2>🏆 Declare Match Winner</h2>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px">Select a completed match and declare the winner.</p>
+      <label>Select Match</label>
+      <select id="admin-match-sel" onchange="onAdminMatchChange()">
+        <option value="">-- Choose a match --</option>
+        ${pendingMatches.map(m=>`<option value="${m.no}">Match ${m.no}: ${short(m.home)} vs ${short(m.away)} (${formatDate(m.date)})</option>`).join('')}
+      </select>
+      <div id="admin-winner-area" style="display:none">
+        <label>Winning Team</label>
+        <div class="team-btns" id="admin-team-btns"></div>
+        <input type="hidden" id="admin-winner-val">
+        <button class="btn-green" onclick="adminDeclareWinner()">Declare Winner ✅</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🗑 Declared Results</h2>
+      <div id="admin-results-list">${Object.keys(results).length===0?'<p class="empty">No results declared yet.</p>':
+        Object.keys(results).map(no=>{
+          const m=SCHEDULE.find(x=>x.no===parseInt(no));
+          return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="color:var(--muted);font-size:0.82rem">M${no}</span>
+            <span style="flex:1;font-weight:700">${m?short(m.home)+' vs '+short(m.away):'?'}</span>
+            <span style="color:var(--green);font-weight:800">🏆 ${short(results[no])}</span>
+            <button class="btn-sm btn-red" onclick="adminUndoResult(${no})">Undo</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚠️ Reset All Bets & Results</h2>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px">Clears all bets and results. Admins remain.</p>
+      <button class="btn-red" onclick="adminReset()">Reset Everything</button>
+    </div>`;
+}
+
+function onAdminMatchChange() {
+  const no = parseInt(document.getElementById('admin-match-sel').value);
+  const area = document.getElementById('admin-winner-area');
+  if (!no) { area.style.display='none'; return; }
+  const m = SCHEDULE.find(x=>x.no===no);
+  area.style.display='block';
+  document.getElementById('admin-winner-val').value='';
+  document.getElementById('admin-team-btns').innerHTML=`
+    <button class="team-btn" onclick="selectAdminWinner('${m.home}',this)">${m.home}</button>
+    <button class="team-btn" onclick="selectAdminWinner('${m.away}',this)">${m.away}</button>`;
+}
+
+function selectAdminWinner(team,el){
+  document.getElementById('admin-winner-val').value=team;
+  document.querySelectorAll('#admin-team-btns .team-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function adminDeclareWinner() {
+  const no = parseInt(document.getElementById('admin-match-sel').value);
+  const winner = document.getElementById('admin-winner-val').value;
+  if (!no||!winner) return toast('Select match and winner!',true);
+  db.ref('results/'+no).set(winner);
+  toast(`Match ${no}: ${short(winner)} declared winner! 🏆`);
+  renderAdminPage();
+}
+
+function adminUndoResult(no) {
+  if (!confirm('Undo this result? All bets for this match will be recalculated.')) return;
+  db.ref('results/'+no).remove();
+  toast('Result undone.');
+}
+
+function adminReset() {
+  if (!confirm('Reset ALL bets and results? This cannot be undone!')) return;
+  db.ref('bets').remove();
+  db.ref('results').remove();
+  toast('All data cleared.', true);
+}
+
+function adminLogout() { currentAdmin=null; renderAdminPage(); toast('Logged out.'); }
+
+// ==============================
+// ADMIN AUTH
+// ==============================
+function doAdminLogin() {
+  const u = document.getElementById('al-username').value.trim();
+  const p = document.getElementById('al-passcode').value.trim();
+  const err = document.getElementById('login-err');
+  if (admins[u] && admins[u].passcode === p) {
+    currentAdmin = u;
+    err.style.display='none';
+    closeModal('admin-login-modal');
+    renderAdminPage();
+    toast(`Welcome, ${u}! 👋`);
+  } else {
+    err.style.display='block';
+  }
+}
+
+function doAdminRegister() {
+  const u = document.getElementById('ar-username').value.trim();
+  const p = document.getElementById('ar-passcode').value.trim();
+  const err = document.getElementById('register-err');
+  err.style.display='none';
+  if (!u||!p) { err.textContent='Fill all fields.'; err.style.display='block'; return; }
+  const count = Object.keys(admins).length;
+  if (count>=3) { err.textContent='All 3 admin slots are taken! An existing admin must give you their credentials.'; err.style.display='block'; return; }
+  if (admins[u]) { err.textContent='Username already taken.'; err.style.display='block'; return; }
+  db.ref('admins/'+u).set({passcode:p,createdAt:Date.now()});
+  currentAdmin=u;
+  closeModal('admin-register-modal');
+  renderAdminPage();
+  toast(`Admin account created! Welcome, ${u} 🎉`);
+}
+
+// ==============================
+// UTILS
+// ==============================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='standings') renderStandings();
+  if(name==='playoffs') renderPlayoffs();
+  if(name==='admin') renderAdminPage();
+  if(name==='bets') renderBetsPage();
+  if(name==='schedule') renderScheduleTable();
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function todayStr(){
+  const d=new Date(); const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatDate(s){
+  if(!s||s==='TBA') return 'TBA';
+  const d=new Date(s+'T00:00:00');
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
+}
+
+function toast(msg, isErr=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(isErr?' err':'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+</script>
+</body>
+</html>
